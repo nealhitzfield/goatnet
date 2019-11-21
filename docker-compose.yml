@@ -1,0 +1,230 @@
+services:
+  jackett:
+    container_name: jackett
+    environment:
+    - PGID=${PGID}
+    - PUID=${PUID}
+    - TZ=${TZ}
+    hostname: ${DOCKERHOSTNAME}
+    image: linuxserver/jackett
+    logging:
+      driver: json-file
+      options:
+        max-file: ${DOCKERLOGGING_MAXFILE}
+        max-size: ${DOCKERLOGGING_MAXSIZE}
+    ports:
+    - ${JACKETT_PORT_9117}:9117
+    restart: unless-stopped
+    volumes:
+    - ${DOCKERCONFDIR}/jackett:/config
+    - downloads:/downloads
+  netdata:
+    cap_add:
+    - SYS_PTRACE
+    container_name: netdata
+    environment:
+    - PGID=${DOCKERGID}
+    - TZ=${TZ}
+    hostname: ${DOCKERHOSTNAME}
+    image: netdata/netdata
+    logging:
+      driver: json-file
+      options:
+        max-file: ${DOCKERLOGGING_MAXFILE}
+        max-size: ${DOCKERLOGGING_MAXSIZE}
+    ports:
+    - ${NETDATA_PORT_19999}:19999
+    restart: unless-stopped
+    security_opt:
+    - apparmor:unconfined
+    volumes:
+    - /proc:/host/proc:ro
+    - /sys:/host/sys:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ${DOCKERCONFDIR}/netdata:/etc/netdata
+  ombi:
+    container_name: ombi
+    environment:
+    - PGID=${PGID}
+    - PUID=${PUID}
+    - TZ=${TZ}
+    hostname: ${DOCKERHOSTNAME}
+    image: linuxserver/ombi
+    logging:
+      driver: json-file
+      options:
+        max-file: ${DOCKERLOGGING_MAXFILE}
+        max-size: ${DOCKERLOGGING_MAXSIZE}
+    ports:
+    - ${OMBI_PORT_3579}:3579
+    restart: unless-stopped
+    volumes:
+    - ${DOCKERCONFDIR}/ombi:/config
+  organizr:
+    container_name: organizr
+    environment:
+    - PGID=${PGID}
+    - PUID=${PUID}
+    - TZ=${TZ}
+    hostname: ${DOCKERHOSTNAME}
+    image: organizrtools/organizr-v2:php-fpm
+    logging:
+      driver: json-file
+      options:
+        max-file: ${DOCKERLOGGING_MAXFILE}
+        max-size: ${DOCKERLOGGING_MAXSIZE}
+    ports:
+    - ${ORGANIZR_PORT_80}:80
+    restart: unless-stopped
+    volumes:
+    - ${DOCKERCONFDIR}/organizr:/config
+  plex:
+    container_name: plex
+    network_mode: ${PLEX_NETWORK_MODE}
+    environment:
+    - PGID=${PGID}
+    - PUID=${PUID}
+    - TZ=${TZ}
+    - VERSION=${PLEX_VERSION}
+    hostname: ${DOCKERHOSTNAME}
+    image: linuxserver/plex
+    logging:
+      driver: json-file
+      options:
+        max-file: ${DOCKERLOGGING_MAXFILE}
+        max-size: ${DOCKERLOGGING_MAXSIZE}
+    restart: unless-stopped
+#    ports:
+#    - 32400:32400
+#    - 32400:32400/udp
+#    - 32469:32469
+#    - 32469:32469/udp
+#    - 5353:5353/udp
+#    - 1900:1900/udp
+    volumes:
+    - ${DOCKERCONFDIR}/plex:/config
+    - movies:/movies
+    - tv:/tv
+    - ${PLEX_TRANSCODEDIR}:/transcode
+  portainer:
+    command: -H unix:///var/run/docker.sock
+    container_name: portainer
+    environment:
+    - TZ=${TZ}
+    hostname: ${DOCKERHOSTNAME}
+    image: portainer/portainer
+    logging:
+      driver: json-file
+      options:
+        max-file: ${DOCKERLOGGING_MAXFILE}
+        max-size: ${DOCKERLOGGING_MAXSIZE}
+    ports:
+    - ${PORTAINER_PORT_9000}:9000
+    restart: unless-stopped
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ${DOCKERCONFDIR}/portainer:/data
+  radarr:
+    container_name: radarr
+    environment:
+    - PGID=${PGID}
+    - PUID=${PUID}
+    - TZ=${TZ}
+    hostname: ${DOCKERHOSTNAME}
+    image: linuxserver/radarr
+    logging:
+      driver: json-file
+      options:
+        max-file: ${DOCKERLOGGING_MAXFILE}
+        max-size: ${DOCKERLOGGING_MAXSIZE}
+    ports:
+    - ${RADARR_PORT_7878}:7878
+    restart: unless-stopped
+    volumes:
+    - ${DOCKERCONFDIR}/radarr:/config
+    - downloads:/downloads
+    - movies:/movies
+  sonarr:
+    container_name: sonarr
+    environment:
+    - PGID=${PGID}
+    - PUID=${PUID}
+    - TZ=${TZ}
+    hostname: ${DOCKERHOSTNAME}
+    image: linuxserver/sonarr
+    logging:
+      driver: json-file
+      options:
+        max-file: ${DOCKERLOGGING_MAXFILE}
+        max-size: ${DOCKERLOGGING_MAXSIZE}
+    ports:
+    - ${SONARR_PORT_8989}:8989
+    restart: unless-stopped
+    volumes:
+    - ${DOCKERCONFDIR}/sonarr:/config
+    - downloads:/downloads
+    - tv:/tv
+  tautulli:
+    container_name: tautulli
+    environment:
+    - PGID=${PGID}
+    - PUID=${PUID}
+    - TZ=${TZ}
+    hostname: ${DOCKERHOSTNAME}
+    image: linuxserver/tautulli
+    logging:
+      driver: json-file
+      options:
+        max-file: ${DOCKERLOGGING_MAXFILE}
+        max-size: ${DOCKERLOGGING_MAXSIZE}
+    ports:
+    - ${TAUTULLI_PORT_8181}:8181
+    restart: unless-stopped
+    volumes:
+    - ${DOCKERCONFDIR}/tautulli:/config
+    - ${DOCKERCONFDIR}/plex/Library/Application Support/Plex Media Server/Logs:/logs:ro
+  qbittorrentvpn:
+    container_name: qbittorrentvpn
+    privileged: true
+    environment:
+    - VPN_ENABLED=${VPN_ENABLE}
+    - LAN_NETWORK=${LAN_NETWORK}
+    - NAME_SERVERS=${NS1}
+    - PUID=${PUID}
+    - PGID=${PGID}
+    hostname: ${DOCKERHOSTNAME}
+    image: markusmcnugen/qbittorrentvpn
+    volumes:
+    - ${DOCKERCONFDIR}/qbittorrentvpn:/config
+    - downloads:/downloads
+    ports:
+    - 8080:8080
+    - 8999:8999
+    - 8999:8999/udp
+  ouroboros:
+    container_name: ouroboros
+    hostname: ouroboros
+    image: pyouroboros/ouroboros
+    environment:
+      - CLEANUP=true
+      - INTERVAL=300
+      - LOG_LEVEL=info
+      - SELF_UPDATE=true
+      - TZ=America/Chicago
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+volumes:
+  downloads:
+    driver: local-persist
+    driver_opts:
+      mountpoint: ${DOWNLOADSDIR}
+  tv:
+    driver: local-persist
+    driver_opts:
+      mountpoint: ${TVDIR}
+  movies:
+    driver: local-persist
+    driver_opts:
+      mountpoint: ${MOVIESDIR}
+version: "3.4"
