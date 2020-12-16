@@ -1,30 +1,69 @@
+version: "3.8"
 services:
-  jackett:
-    container_name: jackett
+  nginx:
+    image: ghcr.io/linuxserver/nginx
+    container_name: nginx
     environment:
-    - PGID=${PGID}
-    - PUID=${PUID}
-    - TZ=${TZ}
-    hostname: ${DOCKERHOSTNAME}
-    image: linuxserver/jackett
-    logging:
-      driver: json-file
-      options:
-        max-file: ${DOCKERLOGGING_MAXFILE}
-        max-size: ${DOCKERLOGGING_MAXSIZE}
-    ports:
-    - ${JACKETT_PORT_9117}:9117
-    restart: unless-stopped
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
     volumes:
-    - ${DOCKERCONFDIR}/jackett:/config
-    - downloads:/downloads
+      - ${DOCKERCONFDIR}/nginx:/config
+    ports:
+      - 80:80
+      - 443:443
+    restart: unless-stopped
+  mariadb:
+    image: ghcr.io/linuxserver/mariadb
+    container_name: mariadb
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - TZ=${TZ}
+      - MYSQL_DATABASE=${MYSQL_DATABASE} #optional
+      - MYSQL_USER=${MYSQL_USER} #optional
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD} #optional
+    volumes:
+      - ${DOCKERCONFDIR}/mariadb:/config
+    ports:
+      - 3306:3306
+    restart: unless-stopped
+  nextcloud:
+    image: ghcr.io/linuxserver/nextcloud
+    container_name: nextcloud
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKERCONFDIR}/nextcloud:/config
+      - ${NEXTCLOUD_MOUNT}:/data
+    ports:
+      - 444:444
+    restart: unless-stopped
+  sabnzbd:
+    image: ghcr.io/linuxserver/sabnzbd
+    container_name: sabnzbd
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKERCONFDIR}/sabnzbd:/config
+      - ${DOWNLOADSDIR}:/downloads
+      - ${DOWNLOADSDIR}/incomplete:/incomplete-downloads
+    ports:
+      - 8080:8080
+      - 9090:9090
+    restart: unless-stopped
   netdata:
     cap_add:
-    - SYS_PTRACE
+      - SYS_PTRACE
     container_name: netdata
     environment:
-    - PGID=${DOCKERGID}
-    - TZ=${TZ}
+      - PGID=${DOCKERGID}
+      - TZ=${TZ}
     hostname: ${DOCKERHOSTNAME}
     image: netdata/netdata
     logging:
@@ -33,59 +72,36 @@ services:
         max-file: ${DOCKERLOGGING_MAXFILE}
         max-size: ${DOCKERLOGGING_MAXSIZE}
     ports:
-    - ${NETDATA_PORT_19999}:19999
+      - ${NETDATA_PORT_19999}:19999
     restart: unless-stopped
     security_opt:
-    - apparmor:unconfined
+      - apparmor:unconfined
     volumes:
-    - /proc:/host/proc:ro
-    - /sys:/host/sys:ro
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    - ${DOCKERCONFDIR}/netdata:/etc/netdata
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DOCKERCONFDIR}/netdata:/etc/netdata
   ombi:
     container_name: ombi
     environment:
-    - PGID=${PGID}
-    - PUID=${PUID}
-    - TZ=${TZ}
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
     hostname: ${DOCKERHOSTNAME}
-    image: linuxserver/ombi
-    logging:
-      driver: json-file
-      options:
-        max-file: ${DOCKERLOGGING_MAXFILE}
-        max-size: ${DOCKERLOGGING_MAXSIZE}
+    image: ghcr.io/linuxserver/ombi
     ports:
-    - ${OMBI_PORT_3579}:3579
+      - ${OMBI_PORT_3579}:3579
     restart: unless-stopped
     volumes:
-    - ${DOCKERCONFDIR}/ombi:/config
-  organizr:
-    container_name: organizr
-    environment:
-    - PGID=${PGID}
-    - PUID=${PUID}
-    - TZ=${TZ}
-    hostname: ${DOCKERHOSTNAME}
-    image: organizrtools/organizr-v2:php-fpm
-    logging:
-      driver: json-file
-      options:
-        max-file: ${DOCKERLOGGING_MAXFILE}
-        max-size: ${DOCKERLOGGING_MAXSIZE}
-    ports:
-    - ${ORGANIZR_PORT_80}:80
-    restart: unless-stopped
-    volumes:
-    - ${DOCKERCONFDIR}/organizr:/config
+      - ${DOCKERCONFDIR}/ombi:/config
   plex:
     container_name: plex
     network_mode: ${PLEX_NETWORK_MODE}
     environment:
-    - PGID=${PGID}
-    - PUID=${PUID}
-    - TZ=${TZ}
-    - VERSION=${PLEX_VERSION}
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
+      - VERSION=${PLEX_VERSION}
     hostname: ${DOCKERHOSTNAME}
     image: linuxserver/plex
     logging:
@@ -94,23 +110,16 @@ services:
         max-file: ${DOCKERLOGGING_MAXFILE}
         max-size: ${DOCKERLOGGING_MAXSIZE}
     restart: unless-stopped
-#    ports:
-#    - 32400:32400
-#    - 32400:32400/udp
-#    - 32469:32469
-#    - 32469:32469/udp
-#    - 5353:5353/udp
-#    - 1900:1900/udp
     volumes:
-    - ${DOCKERCONFDIR}/plex:/config
-    - movies:/movies
-    - tv:/tv
-    - ${PLEX_TRANSCODEDIR}:/transcode
+      - ${DOCKERCONFDIR}/plex:/config
+      - ${MOVIESDIR}:/movies
+      - ${TVDIR}:/tv
+      - ${PLEX_TRANSCODEDIR}:/transcode
   portainer:
     command: -H unix:///var/run/docker.sock
     container_name: portainer
     environment:
-    - TZ=${TZ}
+      - TZ=${TZ}
     hostname: ${DOCKERHOSTNAME}
     image: portainer/portainer
     logging:
@@ -119,17 +128,17 @@ services:
         max-file: ${DOCKERLOGGING_MAXFILE}
         max-size: ${DOCKERLOGGING_MAXSIZE}
     ports:
-    - ${PORTAINER_PORT_9000}:9000
+      - ${PORTAINER_PORT_9000}:9000
     restart: unless-stopped
     volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-    - ${DOCKERCONFDIR}/portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKERCONFDIR}/portainer:/data
   radarr:
     container_name: radarr
     environment:
-    - PGID=${PGID}
-    - PUID=${PUID}
-    - TZ=${TZ}
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
     hostname: ${DOCKERHOSTNAME}
     image: linuxserver/radarr
     logging:
@@ -138,18 +147,18 @@ services:
         max-file: ${DOCKERLOGGING_MAXFILE}
         max-size: ${DOCKERLOGGING_MAXSIZE}
     ports:
-    - ${RADARR_PORT_7878}:7878
+      - ${RADARR_PORT_7878}:7878
     restart: unless-stopped
     volumes:
-    - ${DOCKERCONFDIR}/radarr:/config
-    - downloads:/downloads
-    - movies:/movies
+      - ${DOCKERCONFDIR}/radarr:/config
+      - ${DOWNLOADSDIR}:/downloads
+      - ${MOVIESDIR}:/movies
   sonarr:
     container_name: sonarr
     environment:
-    - PGID=${PGID}
-    - PUID=${PUID}
-    - TZ=${TZ}
+      - PGID=${PGID}
+      - PUID=${PUID}
+      - TZ=${TZ}
     hostname: ${DOCKERHOSTNAME}
     image: linuxserver/sonarr
     logging:
@@ -158,49 +167,12 @@ services:
         max-file: ${DOCKERLOGGING_MAXFILE}
         max-size: ${DOCKERLOGGING_MAXSIZE}
     ports:
-    - ${SONARR_PORT_8989}:8989
+      - ${SONARR_PORT_8989}:8989
     restart: unless-stopped
     volumes:
-    - ${DOCKERCONFDIR}/sonarr:/config
-    - downloads:/downloads
-    - tv:/tv
-  tautulli:
-    container_name: tautulli
-    environment:
-    - PGID=${PGID}
-    - PUID=${PUID}
-    - TZ=${TZ}
-    hostname: ${DOCKERHOSTNAME}
-    image: linuxserver/tautulli
-    logging:
-      driver: json-file
-      options:
-        max-file: ${DOCKERLOGGING_MAXFILE}
-        max-size: ${DOCKERLOGGING_MAXSIZE}
-    ports:
-    - ${TAUTULLI_PORT_8181}:8181
-    restart: unless-stopped
-    volumes:
-    - ${DOCKERCONFDIR}/tautulli:/config
-    - ${DOCKERCONFDIR}/plex/Library/Application Support/Plex Media Server/Logs:/logs:ro
-  qbittorrentvpn:
-    container_name: qbittorrentvpn
-    privileged: true
-    environment:
-    - VPN_ENABLED=${VPN_ENABLE}
-    - LAN_NETWORK=${LAN_NETWORK}
-    - NAME_SERVERS=${NS1}
-    - PUID=${PUID}
-    - PGID=${PGID}
-    hostname: ${DOCKERHOSTNAME}
-    image: markusmcnugen/qbittorrentvpn
-    volumes:
-    - ${DOCKERCONFDIR}/qbittorrentvpn:/config
-    - downloads:/downloads
-    ports:
-    - 8080:8080
-    - 8999:8999
-    - 8999:8999/udp
+      - ${DOCKERCONFDIR}/sonarr:/config
+      - ${DOWNLOADSDIR}:/downloads
+      - ${TVDIR}:/tv
   ouroboros:
     container_name: ouroboros
     hostname: ouroboros
@@ -210,21 +182,7 @@ services:
       - INTERVAL=300
       - LOG_LEVEL=info
       - SELF_UPDATE=true
-      - TZ=America/Chicago
+      - TZ=${TZ}
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-volumes:
-  downloads:
-    driver: local-persist
-    driver_opts:
-      mountpoint: ${DOWNLOADSDIR}
-  tv:
-    driver: local-persist
-    driver_opts:
-      mountpoint: ${TVDIR}
-  movies:
-    driver: local-persist
-    driver_opts:
-      mountpoint: ${MOVIESDIR}
-version: "3.4"
