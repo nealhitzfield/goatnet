@@ -1,4 +1,4 @@
 # goatnet
-I keep breaking things, all hail zfs snapshots 
+I keep breaking things
 ༼ つ ಥ_ಥ ༽つ
 (╯°□°）╯︵ ┻━┻
