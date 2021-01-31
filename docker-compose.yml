@@ -103,7 +103,7 @@ services:
       - TZ=${TZ}
       - VERSION=${PLEX_VERSION}
     hostname: ${DOCKERHOSTNAME}
-    image: linuxserver/plex
+    image: ghcr.io/linuxserver/plex
     logging:
       driver: json-file
       options:
@@ -140,7 +140,7 @@ services:
       - PUID=${PUID}
       - TZ=${TZ}
     hostname: ${DOCKERHOSTNAME}
-    image: linuxserver/radarr
+    image: ghcr.io/linuxserver/radarr
     logging:
       driver: json-file
       options:
@@ -160,7 +160,7 @@ services:
       - PUID=${PUID}
       - TZ=${TZ}
     hostname: ${DOCKERHOSTNAME}
-    image: linuxserver/sonarr
+    image: ghcr.io/linuxserver/sonarr
     logging:
       driver: json-file
       options:
